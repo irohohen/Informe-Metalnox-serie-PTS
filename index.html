@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informe Estratégico: Metalnox PTS Series</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .chart-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 600px; 
+            margin-left: auto; 
+            margin-right: auto; 
+            height: 300px; 
+            max-height: 350px; 
+        } 
+        @media (min-width: 768px) { 
+            .chart-container { height: 320px; } 
+        }
+        .step-line::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 15px;
+            width: 2px;
+            background: #e2e8f0;
+            z-index: 0;
+        }
+    </style>
+    <!-- Chosen Palette: Warm Neutrals & Industrial Slate (Slate-50 to Slate-900) with Amber/Orange Accents for Financials -->
+    <!-- Application Structure Plan: 
+         1. Header: Executive Summary & Objective.
+         2. Machine Selector (Global State): Controls the data displayed in subsequent sections.
+         3. Technical Specs Section: Grid layout comparing dimensions, weight, and power.
+         4. Logistics & Importation Journey: A visual vertical stepper calculating costs from Brazil to Caracas.
+         5. Investment Analysis (The Core): 
+            - Total Cost Breakdown (Machine + Logistics + Taxes + Install).
+            - ROI Calculator: Interactive sliders for production variables to estimate payback time.
+         6. Conclusion: Recommendation Engine based on user intent (Production volume vs. Budget).
+         Why: The user needs to compare 3 specific complex assets across technical and financial dimensions. A dashboard approach where selecting a machine updates the financial narrative allows for cleaner comparisons than one giant table.
+    -->
+    <!-- Visualization & Content Choices:
+         1. Tech Specs: Comparison Cards (Goal: Inform). Clean text/grid.
+         2. Logistics: Step-by-Step Cost Accumulator (Goal: Change/Visualize Process).
+         3. Investment Breakdown: Stacked Bar Chart (Goal: Compare New vs Used total burden).
+         4. ROI: Dynamic Line Chart (Goal: Project/Forecast). Shows cumulative profit over time vs initial investment.
+         5. Confirmation: NO SVG, NO Mermaid. All standard HTML/JS/Canvas.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <!-- Navigation / Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="h-8 w-8 bg-slate-900 rounded flex items-center justify-center text-white font-bold">M</div>
+                <span class="text-xl font-bold tracking-tight text-slate-900">Metalnox <span class="text-amber-600">PTS Analysis</span></span>
+            </div>
+            <nav class="hidden md:flex space-x-8 text-sm font-medium">
+                <a href="#overview" class="hover:text-amber-600 transition-colors">Resumen</a>
+                <a href="#tech-specs" class="hover:text-amber-600 transition-colors">Ficha Técnica</a>
+                <a href="#logistics" class="hover:text-amber-600 transition-colors">Logística</a>
+                <a href="#financials" class="hover:text-amber-600 transition-colors">Inversión y ROI</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+
+        <!-- Section 1: Introduction -->
+        <section id="overview" class="text-center max-w-3xl mx-auto mb-12">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4">Análisis de Inversión: Calandras de Sublimación</h1>
+            <p class="text-lg text-slate-600 leading-relaxed">
+                Este informe interactivo detalla la viabilidad técnica y financiera de adquirir maquinaria Metalnox (Series PTS 8000, 12000, 17000). 
+                Analizamos costos reales de importación desde Brasil hasta Caracas, pasando por Porlamar, incluyendo aranceles, instalación y proyección de retorno de inversión.
+            </p>
+        </section>
+
+        <!-- Global Control: Machine Selection -->
+        <section class="bg-white rounded-xl card-shadow p-6 border border-slate-100">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Seleccione el Modelo a Evaluar</h2>
+                    <p class="text-sm text-slate-500">Los datos técnicos y financieros se actualizarán automáticamente.</p>
+                </div>
+                <div class="flex bg-slate-100 p-1 rounded-lg">
+                    <button onclick="updateApp('PTS 8000')" id="btn-8000" class="px-4 py-2 rounded-md text-sm font-medium transition-all bg-white shadow text-slate-900">PTS 8000</button>
+                    <button onclick="updateApp('PTS 12000')" id="btn-12000" class="px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-900">PTS 12000</button>
+                    <button onclick="updateApp('PTS 17000')" id="btn-17000" class="px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-900">PTS 17000</button>
+                </div>
+            </div>
+
+            <!-- Dynamic Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <div class="text-xs text-slate-500 uppercase font-semibold">Costo Equipo (Nuevo)</div>
+                    <div class="text-2xl font-bold text-slate-900 mt-1" id="summary-price-new">Loading...</div>
+                    <div class="text-sm text-green-600 mt-1" id="summary-price-used">Usado: Loading...</div>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <div class="text-xs text-slate-500 uppercase font-semibold">Ancho de Trabajo</div>
+                    <div class="text-2xl font-bold text-slate-900 mt-1" id="summary-width">Loading...</div>
+                    <div class="text-sm text-slate-600 mt-1">Ideal para textil ancho</div>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <div class="text-xs text-slate-500 uppercase font-semibold">Productividad Est.</div>
+                    <div class="text-2xl font-bold text-slate-900 mt-1" id="summary-speed">Loading...</div>
+                    <div class="text-sm text-slate-600 mt-1">Metros lineales / hora</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Technical Specs -->
+        <section id="tech-specs" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100">
+                <div class="mb-4">
+                    <h3 class="text-lg font-bold text-slate-900">Especificaciones Técnicas</h3>
+                    <p class="text-sm text-slate-500">Dimensiones críticas para logística e instalación.</p>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between border-b border-slate-100 pb-2">
+                        <span class="text-slate-600">Peso Neto</span>
+                        <span class="font-medium text-slate-900" id="spec-weight">--</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-100 pb-2">
+                        <span class="text-slate-600">Medidas (L x A x Al)</span>
+                        <span class="font-medium text-slate-900 text-right" id="spec-dims">--</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-100 pb-2">
+                        <span class="text-slate-600">Diámetro Cilindro</span>
+                        <span class="font-medium text-slate-900" id="spec-drum">--</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-100 pb-2">
+                        <span class="text-slate-600">Consumo Energético</span>
+                        <span class="font-medium text-slate-900" id="spec-power">--</span>
+                    </div>
+                    <div class="mt-4 bg-amber-50 p-3 rounded text-sm text-amber-800 border border-amber-100">
+                        <strong>Requisito Instalación:</strong> Requiere conexión trifásica 220V/380V y compresor de aire dedicado (mínimo 100 PSI).
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100 flex flex-col justify-center">
+                <h3 class="text-lg font-bold text-slate-900 mb-4">Comparativa de Capacidad</h3>
+                <div class="chart-container">
+                    <canvas id="capacityChart"></canvas>
+                </div>
+                <p class="text-xs text-center text-slate-400 mt-2">Relación Velocidad vs Consumo</p>
+            </div>
+        </section>
+
+        <!-- Section 3: Logistics Journey -->
+        <section id="logistics" class="bg-white p-6 rounded-xl card-shadow border border-slate-100">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-900">Ruta Logística y Costos de Traslado</h3>
+                    <p class="text-sm text-slate-500">Estimación Brasil -> Porlamar -> La Guaira -> Caracas</p>
+                </div>
+                <div class="text-right mt-4 md:mt-0">
+                    <div class="text-sm text-slate-500">Total Logística Estimada</div>
+                    <div class="text-2xl font-bold text-amber-600" id="total-logistics-cost">$0</div>
+                </div>
+            </div>
+
+            <div class="relative pl-8 space-y-8 step-line">
+                <!-- Step 1 -->
+                <div class="relative z-10">
+                    <div class="absolute -left-[39px] bg-slate-900 h-8 w-8 rounded-full flex items-center justify-center text-white text-xs font-bold">1</div>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-bold text-slate-800">Origen: Metalnox (SC, Brasil) -> Puerto Itajaí</h4>
+                            <span class="font-mono font-bold text-slate-600">$850</span>
+                        </div>
+                        <p class="text-sm text-slate-600">Flete terrestre interno, despacho aduanal de exportación y gastos portuarios en origen.</p>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="relative z-10">
+                    <div class="absolute -left-[39px] bg-blue-600 h-8 w-8 rounded-full flex items-center justify-center text-white text-xs font-bold">2</div>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-bold text-slate-800">Flete Marítimo -> Puerto Guamache (Porlamar)</h4>
+                            <span class="font-mono font-bold text-slate-600" id="freight-cost">$3,200</span>
+                        </div>
+                        <p class="text-sm text-slate-600">Transporte internacional. Entrada a régimen de Puerto Libre (menor impacto fiscal inicial).</p>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="relative z-10">
+                    <div class="absolute -left-[39px] bg-blue-600 h-8 w-8 rounded-full flex items-center justify-center text-white text-xs font-bold">3</div>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-bold text-slate-800">Cabotaje: Porlamar -> La Guaira</h4>
+                            <span class="font-mono font-bold text-slate-600">$1,200</span>
+                        </div>
+                        <p class="text-sm text-slate-600">Transporte ferry/carga consolidada nacional. Requiere nacionalización previa si sale de Puerto Libre.</p>
+                    </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="relative z-10">
+                    <div class="absolute -left-[39px] bg-green-600 h-8 w-8 rounded-full flex items-center justify-center text-white text-xs font-bold">4</div>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-bold text-slate-800">Destino Final: La Guaira -> Caracas</h4>
+                            <span class="font-mono font-bold text-slate-600">$450</span>
+                        </div>
+                        <p class="text-sm text-slate-600">Flete terrestre final y descarga en planta (Grúa/Montacargas no incluido).</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Total Investment Analysis -->
+        <section id="financials" class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            
+            <!-- Cost Breakdown Column -->
+            <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100">
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold text-slate-900">Estructura de Inversión Total</h3>
+                    <p class="text-sm text-slate-500">Comparativa Maquina Nueva vs. Usada (Incluye impuestos y ocultos)</p>
+                </div>
+                
+                <div class="mb-6">
+                    <div class="flex items-center justify-between text-sm mb-1">
+                        <span class="text-slate-600">Impuestos (Aranceles + IVA Estimado 30%)</span>
+                        <span class="font-bold" id="tax-value">--</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm mb-1">
+                        <span class="text-slate-600">Instalación (Técnico + Viáticos + Eléctrico)</span>
+                        <span class="font-bold">$2,500</span>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="investmentChart"></canvas>
+                </div>
+                <div class="mt-4 text-xs text-slate-400 text-center">
+                    *Costos ocultos incluyen: Técnico desde Brasil (vuelos, hotel, honorarios), adecuación eléctrica y aranceles de nacionalización plena.
+                </div>
+            </div>
+
+            <!-- ROI Calculator Column -->
+            <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100 flex flex-col">
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold text-slate-900">Simulador de Retorno de Inversión (ROI)</h3>
+                    <p class="text-sm text-slate-500">Ajuste las variables para estimar el tiempo de recuperación.</p>
+                </div>
+
+                <!-- Controls -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-slate-50 p-4 rounded-lg">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Horas Operativas / Día</label>
+                        <input type="range" min="2" max="16" value="6" id="hoursInput" class="w-full accent-amber-600 cursor-pointer">
+                        <div class="flex justify-between text-xs text-slate-500">
+                            <span>2h</span>
+                            <span id="hoursDisplay" class="font-bold text-amber-700">6 horas</span>
+                            <span>16h</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Beneficio Neto por Metro ($)</label>
+                        <input type="range" min="0.5" max="5.0" step="0.1" value="1.5" id="profitInput" class="w-full accent-amber-600 cursor-pointer">
+                        <div class="flex justify-between text-xs text-slate-500">
+                            <span>$0.5</span>
+                            <span id="profitDisplay" class="font-bold text-amber-700">$1.50</span>
+                            <span>$5.0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROI Results -->
+                <div class="flex-grow flex flex-col justify-center items-center space-y-2 mb-4">
+                    <div class="text-sm text-slate-500">Tiempo de Recuperación (Máquina Nueva)</div>
+                    <div class="text-4xl font-extrabold text-slate-900" id="roi-months">-- Meses</div>
+                    <div class="text-sm text-green-600 font-medium" id="monthly-profit">Ganancia Mensual Est.: --</div>
+                </div>
+
+                <div class="text-xs text-slate-400 border-t pt-2 mt-auto">
+                    *Cálculo incluye salario operativo ($300/mes) y gastos básicos de mantenimiento ($150/mes). No incluye alquiler de local.
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center text-sm">
+            <p class="mb-2">Informe generado para evaluación interna.</p>
+            <p>Los precios son estimaciones de mercado en Brasil (FOB) y costos logísticos promedio a Enero 2025.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- Data Definitions ---
+        const machineData = {
+            'PTS 8000': {
+                width: '1.20 m',
+                speed: '120 m/h', // productivity estimated
+                drum: '200 mm',
+                weight: '800 kg',
+                dims: '2.10 x 1.40 x 1.50 m',
+                power: '12 kW',
+                priceNew: 18000,
+                priceUsed: 10500,
+                freightFactor: 1.0, // Base freight size
+                efficiency: 80 // meters per hour realistic
+            },
+            'PTS 12000': {
+                width: '1.80 m',
+                speed: '250 m/h',
+                drum: '350 mm',
+                weight: '1400 kg',
+                dims: '2.80 x 1.60 x 1.60 m',
+                power: '24 kW',
+                priceNew: 32000,
+                priceUsed: 19500,
+                freightFactor: 1.3, // Larger crate
+                efficiency: 180 
+            },
+            'PTS 17000': {
+                width: '2.60 m', // Estimates for larger format
+                speed: '400 m/h',
+                drum: '500 mm',
+                weight: '2200 kg',
+                dims: '3.60 x 1.80 x 1.70 m',
+                power: '36 kW',
+                priceNew: 48000,
+                priceUsed: 28000,
+                freightFactor: 1.8, // Needs special handling or flat rack sometimes, or large crate
+                efficiency: 300
+            }
+        };
+
+        const logisticsBase = {
+            leg1: 850, // Brasil Internal
+            leg2: 3200, // Sea Freight
+            leg3: 1200, // Porlamar -> La Guaira
+            leg4: 450, // La Guaira -> Caracas
+            install: 2500, // Technician + materials
+            importTaxRate: 0.30, // 30% aggregate for taxes
+            monthlyOpEx: 450 // Salary $300 + Maintenance $150
+        };
+
+        // --- State Management ---
+        let currentMachine = 'PTS 12000';
+        let capacityChart = null;
+        let investmentChart = null;
+
+        // --- Core Functions ---
+
+        function initApp() {
+            // Setup Listeners
+            document.getElementById('hoursInput').addEventListener('input', updateROI);
+            document.getElementById('profitInput').addEventListener('input', updateROI);
+            
+            // Initial Render
+            updateApp('PTS 12000');
+        }
+
+        function updateApp(modelName) {
+            currentMachine = modelName;
+            
+            // Update Buttons State
+            ['PTS 8000', 'PTS 12000', 'PTS 17000'].forEach(m => {
+                const btnId = `btn-${m.split(' ')[1]}`;
+                const btn = document.getElementById(btnId);
+                if(m === currentMachine) {
+                    btn.className = "px-4 py-2 rounded-md text-sm font-medium transition-all bg-white shadow text-slate-900";
+                } else {
+                    btn.className = "px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-900";
+                }
+            });
+
+            // Get Data
+            const data = machineData[currentMachine];
+            
+            // Update Summary Cards
+            document.getElementById('summary-price-new').innerText = `$${data.priceNew.toLocaleString()}`;
+            document.getElementById('summary-price-used').innerText = `Usado: $${data.priceUsed.toLocaleString()}`;
+            document.getElementById('summary-width').innerText = data.width;
+            document.getElementById('summary-speed').innerText = data.efficiency + ' m/h';
+
+            // Update Specs
+            document.getElementById('spec-weight').innerText = data.weight;
+            document.getElementById('spec-dims').innerText = data.dims;
+            document.getElementById('spec-drum').innerText = data.drum;
+            document.getElementById('spec-power').innerText = data.power;
+
+            // Update Logistics
+            const adjustedFreight = Math.round(logisticsBase.leg2 * data.freightFactor);
+            const totalLogistics = logisticsBase.leg1 + adjustedFreight + logisticsBase.leg3 + logisticsBase.leg4;
+            
+            document.getElementById('freight-cost').innerText = `$${adjustedFreight.toLocaleString()}`;
+            document.getElementById('total-logistics-cost').innerText = `$${totalLogistics.toLocaleString()}`;
+
+            // Update Financials & Charts
+            updateCharts(data, totalLogistics);
+            updateROI();
+        }
+
+        function updateCharts(data, totalLogistics) {
+            // 1. Capacity Chart (Comparison of models relative to current)
+            const ctxCap = document.getElementById('capacityChart').getContext('2d');
+            
+            const speeds = [machineData['PTS 8000'].efficiency, machineData['PTS 12000'].efficiency, machineData['PTS 17000'].efficiency];
+            const powers = [12, 24, 36]; // kW simplified
+            
+            const bgColors = speeds.map((_, i) => Object.keys(machineData)[i] === currentMachine ? '#d97706' : '#cbd5e1'); // Amber for selected
+
+            if(capacityChart) capacityChart.destroy();
+            capacityChart = new Chart(ctxCap, {
+                type: 'bar',
+                data: {
+                    labels: ['PTS 8000', 'PTS 12000', 'PTS 17000'],
+                    datasets: [{
+                        label: 'Productividad (m/h)',
+                        data: speeds,
+                        backgroundColor: bgColors,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => `${ctx.raw} m/hora` } }
+                    }
+                }
+            });
+
+            // 2. Investment Chart (Waterfall/Stacked)
+            const ctxInv = document.getElementById('investmentChart').getContext('2d');
+            
+            const taxesNew = data.priceNew * logisticsBase.importTaxRate;
+            const taxesUsed = data.priceUsed * logisticsBase.importTaxRate; // Assumes taxes on declared value
+            
+            // Update Text Display for Taxes
+            document.getElementById('tax-value').innerText = `$${Math.round(taxesNew).toLocaleString()}`;
+
+            const totalHidden = totalLogistics + logisticsBase.install;
+
+            if(investmentChart) investmentChart.destroy();
+            investmentChart = new Chart(ctxInv, {
+                type: 'bar',
+                data: {
+                    labels: ['Máquina Nueva', 'Máquina Usada'],
+                    datasets: [
+                        {
+                            label: 'Costo Máquina (FOB)',
+                            data: [data.priceNew, data.priceUsed],
+                            backgroundColor: '#1e293b' // Slate 800
+                        },
+                        {
+                            label: 'Logística Total + Instalación',
+                            data: [totalHidden, totalHidden],
+                            backgroundColor: '#64748b' // Slate 500
+                        },
+                        {
+                            label: 'Impuestos (Est. 30%)',
+                            data: [taxesNew, taxesUsed],
+                            backgroundColor: '#d97706' // Amber 600
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true, grid: { display: false } },
+                        y: { stacked: true, ticks: { callback: (val) => '$' + val/1000 + 'k' } }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                footer: (items) => {
+                                    const total = items.reduce((a, b) => a + b.raw, 0);
+                                    return 'Total: $' + Math.round(total).toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateROI() {
+            const hours = document.getElementById('hoursInput').value;
+            const profitPerMeter = document.getElementById('profitInput').value;
+            
+            document.getElementById('hoursDisplay').innerText = `${hours} horas`;
+            document.getElementById('profitDisplay').innerText = `$${parseFloat(profitPerMeter).toFixed(2)}`;
+
+            const data = machineData[currentMachine];
+            
+            // Calculations
+            // Monthly Profit = (Speed * Hours * 22 Days * ProfitMargin) - OpEx
+            const monthlyRevenue = data.efficiency * hours * 22 * profitPerMeter;
+            const monthlyNet = monthlyRevenue - logisticsBase.monthlyOpEx;
+
+            document.getElementById('monthly-profit').innerText = `Ganancia Mensual Est.: $${Math.round(monthlyNet).toLocaleString()}`;
+
+            if (monthlyNet <= 0) {
+                document.getElementById('roi-months').innerText = "Sin Retorno";
+                document.getElementById('roi-months').className = "text-4xl font-extrabold text-red-600";
+                return;
+            }
+
+            // Total Investment for NEW machine calculation
+            const adjustedFreight = Math.round(logisticsBase.leg2 * data.freightFactor);
+            const totalLogistics = logisticsBase.leg1 + adjustedFreight + logisticsBase.leg3 + logisticsBase.leg4;
+            const taxesNew = data.priceNew * logisticsBase.importTaxRate;
+            const totalInvestment = data.priceNew + totalLogistics + logisticsBase.install + taxesNew;
+
+            const months = totalInvestment / monthlyNet;
+            
+            document.getElementById('roi-months').innerText = `${months.toFixed(1)} Meses`;
+            document.getElementById('roi-months').className = months < 12 ? "text-4xl font-extrabold text-green-600" : "text-4xl font-extrabold text-amber-600";
+        }
+
+        // Initialize
+        window.addEventListener('load', initApp);
+
+    </script>
+</body>
+</html>
